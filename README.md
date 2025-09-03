@@ -311,6 +311,38 @@ Route::get('/posts', function () {
 });
 ```
 
+
+## Roadmap & Planned Features
+
+We are committed to continuously improving **Laravel Arabic Date**. Here’s our current roadmap and planned enhancements:
+
+### Roadmap
+
+- **v1.x**
+    - [x] Automatic Arabic date conversion for Eloquent model attributes
+    - [x] Arabic numerals and month/day names support
+    - [x] Configurable date formats
+    - [x] Facade and helper methods
+    - [x] Full compatibility with Laravel 9–12
+
+- **v1.1+ (Planned)**
+    - [ ] **AM/PM Conversion:** Convert `AM`/`PM` to Arabic equivalents (`ص` for صباحًا, `م` for مساءً) in formatted dates and times
+    - [ ] Customizable translation for time periods (AM/PM)
+    - [ ] Improved support for API Resource responses
+    - [ ] Blade directive for Arabic date formatting Eg. `@arabicDate()`
+    - [ ] Support for additional calendar systems (e.g., Hijri)
+    - [ ] Enhanced localization and multi-language support
+
+### Upcoming Feature: AM/PM to Arabic (ص/م) Conversion
+
+We plan to add a feature that automatically converts `AM` and `PM` to their Arabic equivalents:
+- `AM` → `ص` (صباحًا)
+- `PM` → `م` (مساءً)
+
+This will apply to all formatted date/time outputs when the application locale is set to Arabic. Example:
+
+
+
 ## Testing
 
 ```bash

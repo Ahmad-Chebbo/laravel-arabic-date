@@ -2,7 +2,7 @@
     "name": "ahmad-chebbo/laravel-arabic-date",
     "description": "A Laravel package for handling Arabic dates and Islamic calendar conversions",
     "keywords": ["laravel", "arabic", "date", "islamic", "calendar", "hijri"],
-    "version": "1.0.0",
+    "version": "1.0.1",
     "type": "library",
     "license": "MIT",
     "authors": [
