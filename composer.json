@@ -2,7 +2,7 @@
     "name": "ahmad-chebbo/laravel-arabic-date",
     "description": "A Laravel package for handling Arabic dates and Islamic calendar conversions",
     "keywords": ["laravel", "arabic", "date", "islamic", "calendar", "hijri"],
-    "version": "1.0.1",
+    "version": "1.1.0",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -39,11 +39,6 @@
                 "ArabicDate": "AhmadChebbo\\LaravelArabicDate\\Facades\\ArabicDate"
             }
         }
-    },
-    "scripts": {
-        "test": "vendor/bin/phpunit",
-        "test-coverage": "vendor/bin/phpunit --coverage-html build/coverage",
-        "test-coverage-text": "vendor/bin/phpunit --coverage-text"
     },
     "minimum-stability": "stable",
     "prefer-stable": true,

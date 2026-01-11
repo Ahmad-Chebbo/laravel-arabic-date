@@ -55,7 +55,17 @@ class ArabicDateService
         'Saturday' => 'السبت',
     ];
 
-        /**
+    /**
+     * English AM/PM to Arabic mapping.
+     */
+    private const ARABIC_AM_PM = [
+        'AM' => 'ص',
+        'PM' => 'م',
+        'am' => 'ص',
+        'pm' => 'م',
+    ];
+
+    /**
      * Format a date to Arabic format.
      */
     public function formatDate(Carbon $date, string $format = null): string
@@ -132,11 +142,16 @@ class ArabicDateService
     }
 
     /**
-     * Convert a formatted date string to Arabic.
+     * Convert a formatted date string to Arabic, including AM/PM support.
      */
     private function convertToArabic(string $formattedDate, Carbon $date): string
     {
         $arabicDate = $formattedDate;
+
+        // Convert AM/PM to Arabic if present
+        foreach (self::ARABIC_AM_PM as $en => $ar) {
+            $arabicDate = str_replace($en, $ar, $arabicDate);
+        }
 
         // Convert numbers to Arabic numerals if enabled
         if (config('arabic-date.enable_arabic_numerals', true)) {

@@ -326,22 +326,17 @@ We are committed to continuously improving **Laravel Arabic Date**. Here’s our
     - [x] Full compatibility with Laravel 9–12
 
 - **v1.1+ (Planned)**
-    - [ ] **AM/PM Conversion:** Convert `AM`/`PM` to Arabic equivalents (`ص` for صباحًا, `م` for مساءً) in formatted dates and times
-    - [ ] Customizable translation for time periods (AM/PM)
+    - [x] **AM/PM Conversion:** Convert `AM`/`PM` to Arabic equivalents (`ص` for صباحًا, `م` for مساءً) in formatted dates and times
+    - [x] Customizable translation for time periods (AM/PM)
     - [ ] Improved support for API Resource responses
     - [ ] Blade directive for Arabic date formatting Eg. `@arabicDate()`
     - [ ] Support for additional calendar systems (e.g., Hijri)
     - [ ] Enhanced localization and multi-language support
 
-### Upcoming Feature: AM/PM to Arabic (ص/م) Conversion
-
-We plan to add a feature that automatically converts `AM` and `PM` to their Arabic equivalents:
-- `AM` → `ص` (صباحًا)
-- `PM` → `م` (مساءً)
-
-This will apply to all formatted date/time outputs when the application locale is set to Arabic. Example:
+### Upcoming: Improved API Resource Support
 
 
+When using API resources (such as Laravel's `JsonResource`), you can automatically ensure all date and time fields are formatted in Arabic, including correct AM/PM conversion. This provides seamless API support for Arabic date formatting.
 
 ## Testing
 

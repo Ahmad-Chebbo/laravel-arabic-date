@@ -39,3 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite
 - Full documentation with examples
 - Laravel auto-discovery support
+
+## [1.1.0] - 2026-01-11
+
+### Added
+
+- AM/PM conversion support for Arabic date formatting
