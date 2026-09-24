@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AhmadChebbo\LaravelArabicDate\Traits;
 
+use AhmadChebbo\LaravelArabicDate\Attributes\ArabicDate as ArabicDateAttribute;
 use AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon;
 use AhmadChebbo\LaravelArabicDate\Services\ArabicDateService;
 use Carbon\Carbon;
@@ -11,11 +12,12 @@ use Carbon\Carbon;
 trait HasArabicDates
 {
     /**
-     * Initialize the trait for each model instance: fields listed in
-     * `$arabicDate` are auto-cast to `datetime` unless already cast,
-     * so the magic `__get` accessor below always receives a Carbon
-     * instance to convert, without requiring the consumer to
-     * separately declare `$casts` for those fields.
+     * Initialize the trait for each model instance: every field returned by
+     * `getArabicDateFields()` (the `$arabicDate` property and/or the
+     * #[ArabicDate] attribute) is auto-cast to `datetime` unless already
+     * cast, so the magic `__get` accessor below always receives a Carbon
+     * instance to convert, without requiring the consumer to separately
+     * declare `$casts` for those fields.
      */
     protected function initializeHasArabicDates(): void
     {
@@ -23,13 +25,9 @@ trait HasArabicDates
             return;
         }
 
-        if (!isset($this->arabicDate) || !is_array($this->arabicDate)) {
-            return;
-        }
-
         $casts = [];
 
-        foreach ($this->arabicDate as $field) {
+        foreach ($this->getArabicDateFields() as $field) {
             if (!array_key_exists($field, $this->getCasts())) {
                 $casts[$field] = 'datetime';
             }
@@ -38,6 +36,38 @@ trait HasArabicDates
         if ($casts !== []) {
             $this->mergeCasts($casts);
         }
+    }
+
+    /**
+     * Get the effective list of Arabic date fields: the `$arabicDate`
+     * property (if declared) merged with fields declared via the
+     * #[ArabicDate(['field'])] class attribute — an alternative syntax
+     * mirroring Eloquent's own #[Fillable]/#[Hidden] attributes.
+     *
+     * The attribute requires Laravel's attribute-based model configuration
+     * support (Illuminate\Database\Eloquent\Model::resolveClassAttribute());
+     * on older Laravel versions it's simply ignored.
+     *
+     * This never writes back to `$this->arabicDate`, since assigning to a
+     * property that isn't declared anywhere in the model's hierarchy would
+     * route through Eloquent's `__set()` and be treated as a database
+     * attribute instead of package configuration.
+     *
+     * @return array<int, string>
+     */
+    protected function getArabicDateFields(): array
+    {
+        $fromProperty = isset($this->arabicDate) && is_array($this->arabicDate) ? $this->arabicDate : [];
+
+        $fromAttribute = method_exists($this, 'resolveClassAttribute')
+            ? (static::resolveClassAttribute(ArabicDateAttribute::class, 'fields') ?? [])
+            : [];
+
+        if ($fromAttribute === []) {
+            return $fromProperty;
+        }
+
+        return array_values(array_unique(array_merge($fromProperty, $fromAttribute)));
     }
 
     /**
@@ -75,9 +105,7 @@ trait HasArabicDates
 
         $supportedLanguages = config('arabic-date.supported_languages', ['ar']);
 
-        if (isset($this->arabicDate) &&
-            is_array($this->arabicDate) &&
-            in_array($key, $this->arabicDate) &&
+        if (in_array($key, $this->getArabicDateFields()) &&
             in_array(app()->getLocale(), $supportedLanguages) &&
             $value instanceof Carbon) {
             return new ArabicCarbon($value, true);
@@ -102,16 +130,12 @@ trait HasArabicDates
      */
     public function convertDatesToArabic(?string $locale = null): array
     {
-        if (!isset($this->arabicDate) || !is_array($this->arabicDate)) {
-            return [];
-        }
-
         $arabicDateService = app(ArabicDateService::class);
         $format = config('arabic-date.custom_format', 'd F Y');
         $arabicEnabled = $this->isArabicConversionEnabled($locale);
         $converted = [];
 
-        foreach ($this->arabicDate as $field) {
+        foreach ($this->getArabicDateFields() as $field) {
             if (!isset($this->attributes[$field]) || !$this->attributes[$field]) {
                 continue;
             }

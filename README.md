@@ -62,6 +62,27 @@ Now, when your application language is set to Arabic (`app()->setLocale('ar')`),
 
 > Fields listed in `$arabicDate` don't need to be declared in `$casts` — the trait automatically casts them to `datetime` for you (see [`auto_convert_on_retrieval`](#configuration-options)). If you'd rather cast a field explicitly, or prefer not to use the trait at all, see [Alternative: Eloquent Cast](#alternative-eloquent-cast) below.
 
+### Alternative: `#[ArabicDate]` Attribute
+
+If you're on a Laravel version with [attribute-based model configuration](https://laravel.com/docs/eloquent#defining-models-using-attributes) (the same mechanism behind `#[Fillable]`/`#[Hidden]`), you can declare the fields as a class attribute instead of — or alongside — the `$arabicDate` property:
+
+```php
+use AhmadChebbo\LaravelArabicDate\Attributes\ArabicDate;
+use AhmadChebbo\LaravelArabicDate\Traits\HasArabicDates;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
+
+#[Fillable(['name', 'email', 'password'])]
+#[Hidden(['password', 'remember_token'])]
+#[ArabicDate(['created_at'])]
+class User extends Authenticatable
+{
+    use HasArabicDates;
+}
+```
+
+If both are present, the property and the attribute are merged. On Laravel versions that don't support attribute-based configuration, `#[ArabicDate]` is simply ignored — use the `$arabicDate` property there instead.
+
 ### Alternative: Eloquent Cast
 
 If you'd rather not add the trait to your model, cast a single field directly instead:

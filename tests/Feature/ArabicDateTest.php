@@ -295,4 +295,41 @@ class ArabicDateTest extends TestCase
         $this->assertInstanceOf(\AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon::class, $model->published_at);
         $this->assertStringContainsString('يناير', $model->published_at->format('d F Y'));
     }
+
+    public function test_arabic_date_attribute_works_without_the_property(): void
+    {
+        app()->setLocale('ar');
+
+        $model = new #[\AhmadChebbo\LaravelArabicDate\Attributes\ArabicDate(['published_at'])] class extends \Illuminate\Database\Eloquent\Model {
+            use \AhmadChebbo\LaravelArabicDate\Traits\HasArabicDates;
+
+            protected $table = 'example_models';
+            protected $fillable = ['title', 'published_at'];
+        };
+
+        $model->published_at = Carbon::create(2024, 1, 15, 14, 30, 0);
+
+        $this->assertInstanceOf(\AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon::class, $model->published_at);
+        $this->assertStringContainsString('يناير', $model->published_at->format('d F Y'));
+    }
+
+    public function test_arabic_date_attribute_merges_with_the_property(): void
+    {
+        app()->setLocale('ar');
+
+        $model = new #[\AhmadChebbo\LaravelArabicDate\Attributes\ArabicDate(['published_at'])] class extends \Illuminate\Database\Eloquent\Model {
+            use \AhmadChebbo\LaravelArabicDate\Traits\HasArabicDates;
+
+            protected $table = 'example_models';
+            protected $fillable = ['title', 'created_at', 'published_at'];
+            protected $arabicDate = ['created_at'];
+        };
+
+        $model->created_at = Carbon::create(2024, 1, 15, 14, 30, 0);
+        $model->published_at = Carbon::create(2024, 2, 20, 9, 0, 0);
+
+        // Both the property-declared field and the attribute-declared field convert
+        $this->assertInstanceOf(\AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon::class, $model->created_at);
+        $this->assertInstanceOf(\AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon::class, $model->published_at);
+    }
 }
