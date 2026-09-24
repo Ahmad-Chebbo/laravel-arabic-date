@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-09-24
+
+### Fixed
+
+- `composer update` in a consuming app failed to resolve because `illuminate/database`'s version constraint didn't include `^13.0`, even though Laravel 13 is out and other common dependencies (e.g. `pestphp/pest-plugin-laravel ^5.0`) already require it. Widened `illuminate/contracts`, `illuminate/database`, and `illuminate/support` to `^9.0|^10.0|^11.0|^12.0|^13.0`.
+- Restored `illuminate/support` and `illuminate/contracts` as explicit `require` entries — the package directly uses classes from both (`ServiceProvider`, `Facade`, `Blade`, `CastsAttributes`), so depending on them only transitively through `illuminate/database` was fragile.
+- `phpunit.xml`'s `<coverage><report>` block (a structure removed since PHPUnit 10) silently made the entire suite report "No tests executed!" under PHPUnit 12 — removed it; `<source>` alone still supports CLI coverage flags and works across PHPUnit 9–12.
+- Bumped `require-dev` (`orchestra/testbench`, `phpunit/phpunit`) to allow versions compatible with Laravel 13 / PHPUnit 12.
+
 ## [1.2.0] - 2026-09-24
 
 ### Added
