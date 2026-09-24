@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-09-24
+
+### Fixed
+
+- `ArabicCarbon` (returned for any `$arabicDate`/`#[ArabicDate]` field when the locale is Arabic) serialized to an empty `{}` from `response()->json($model->created_at)` or any other `json_encode()` call, because it stored its data in protected properties and didn't implement `JsonSerializable` — PHP's default object serialization only picks up public properties. It now implements `JsonSerializable`, returning the same formatted string as `(string) $arabicCarbon`.
+
 ## [1.3.0] - 2026-09-24
 
 ### Added

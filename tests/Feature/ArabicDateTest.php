@@ -332,4 +332,22 @@ class ArabicDateTest extends TestCase
         $this->assertInstanceOf(\AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon::class, $model->created_at);
         $this->assertInstanceOf(\AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon::class, $model->published_at);
     }
+
+    public function test_arabic_carbon_is_json_serializable(): void
+    {
+        app()->setLocale('ar');
+
+        $arabicCarbon = \AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon::parse('2024-01-15 14:30:00');
+
+        // Without JsonSerializable, json_encode() on a plain object only
+        // serializes its public properties, and this class has none —
+        // producing an empty "{}" instead of the formatted date.
+        $json = json_encode($arabicCarbon);
+
+        $this->assertNotSame('{}', $json);
+        $this->assertStringContainsString('٢٠٢٤', json_decode($json));
+
+        $response = response()->json(['created_at' => $arabicCarbon]);
+        $this->assertStringContainsString('٢٠٢٤', json_decode($response->getContent(), true)['created_at']);
+    }
 }

@@ -7,7 +7,7 @@ namespace AhmadChebbo\LaravelArabicDate\Objects;
 use AhmadChebbo\LaravelArabicDate\Services\ArabicDateService;
 use Carbon\Carbon;
 
-class ArabicCarbon implements \Stringable
+class ArabicCarbon implements \JsonSerializable, \Stringable
 {
     /**
      * The original Carbon instance.
@@ -110,6 +110,18 @@ class ArabicCarbon implements \Stringable
     {
         $defaultFormat = config('arabic-date.default_format', 'Y-m-d H:i:s');
         return $this->format($defaultFormat);
+    }
+
+    /**
+     * Serialize to JSON as the formatted string, e.g. for `response()->json($model->created_at)`.
+     *
+     * Without this, json_encode() falls back to serializing this object's
+     * (protected) properties directly, producing an empty `{}` — the same
+     * failure mode PHP objects without JsonSerializable hit in general.
+     */
+    public function jsonSerialize(): string
+    {
+        return (string) $this;
     }
 
     /**
