@@ -88,7 +88,7 @@ class ArabicDateTest extends TestCase
         $this->assertEquals('0123456789', $service->convertFromArabicNumerals('٠١٢٣٤٥٦٧٨٩'));
     }
 
-    public function test_model_trait_works_with_arabic_locale(): void
+    public function test_convert_dates_to_arabic_returns_arabic_strings_for_arabic_locale(): void
     {
         // Set locale to Arabic
         app()->setLocale('ar');
@@ -98,30 +98,30 @@ class ArabicDateTest extends TestCase
         $model->created_at = Carbon::create(2024, 1, 15, 14, 30, 0);
         $model->updated_at = Carbon::create(2024, 1, 16, 10, 15, 0);
 
-        // Trigger the conversion
-        $model->convertDatesToArabic();
+        // Get the Arabic-formatted values without mutating the model
+        $converted = $model->convertDatesToArabic();
 
-        // Check if dates are converted to Arabic
-        $this->assertStringContainsString('٢٠٢٤', $model->created_at);
-        $this->assertStringContainsString('يناير', $model->created_at);
+        $this->assertStringContainsString('٢٠٢٤', $converted['created_at']);
+        $this->assertStringContainsString('يناير', $converted['created_at']);
+
+        // The underlying attribute must remain untouched (still a Carbon instance)
+        $this->assertInstanceOf(Carbon::class, $model->getOriginalDate('created_at'));
     }
 
-        public function test_model_trait_does_not_convert_when_locale_is_not_arabic(): void
+    public function test_convert_dates_to_arabic_returns_readable_strings_when_locale_is_not_arabic(): void
     {
         // Set locale to English
         app()->setLocale('en');
 
         // Create a model instance
         $model = new ExampleModel();
-        $originalDate = Carbon::create(2024, 1, 15, 14, 30, 0);
-        $model->created_at = $originalDate;
+        $model->created_at = Carbon::create(2024, 1, 15, 14, 30, 0);
 
-        // Trigger the conversion
-        $model->convertDatesToArabic();
+        $converted = $model->convertDatesToArabic();
 
-        // Check if dates are NOT converted (should remain in English format)
-        $this->assertStringContainsString('2024', $model->created_at);
-        $this->assertStringContainsString('Jan', $model->created_at);
+        // Not converted to Arabic — should remain readable English
+        $this->assertStringContainsString('2024', $converted['created_at']);
+        $this->assertStringContainsString('Jan', $converted['created_at']);
     }
 
     public function test_arabic_carbon_format_method_works(): void
@@ -184,5 +184,115 @@ class ArabicDateTest extends TestCase
 
         // Test property access
         $this->assertTrue(isset($arabicCarbon->year));
+    }
+
+    public function test_non_cast_field_is_auto_cast_and_converted(): void
+    {
+        app()->setLocale('ar');
+
+        // published_at is listed in $arabicDate but is NOT declared in
+        // ExampleModel's $casts — initializeHasArabicDates() must merge
+        // a datetime cast for it automatically.
+        $model = new ExampleModel();
+        $model->published_at = Carbon::create(2024, 1, 15, 14, 30, 0);
+
+        $this->assertInstanceOf(\AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon::class, $model->published_at);
+        $this->assertStringContainsString('يناير', $model->published_at->format('d F Y'));
+    }
+
+    public function test_get_arabic_carbon_is_not_null_for_non_arabic_locale(): void
+    {
+        app()->setLocale('en');
+
+        $model = new ExampleModel();
+        $model->created_at = Carbon::create(2024, 1, 15, 14, 30, 0);
+
+        $arabicCarbon = $model->getArabicCarbon('created_at');
+
+        $this->assertNotNull($arabicCarbon);
+        $this->assertStringContainsString('2024-01-15', $arabicCarbon->format('Y-m-d'));
+    }
+
+    public function test_abbreviated_month_and_day_names_are_converted(): void
+    {
+        $service = app(ArabicDateService::class);
+        $date = Carbon::create(2024, 1, 15, 14, 30, 0); // Monday
+
+        $formatted = $service->formatDate($date, 'D, d M Y');
+
+        $this->assertStringContainsString('الاثنين', $formatted);
+        $this->assertStringContainsString('يناير', $formatted);
+    }
+
+    public function test_arabic_carbon_to_arabic_includes_month_name(): void
+    {
+        app()->setLocale('ar');
+
+        $model = new ExampleModel();
+        $model->created_at = Carbon::create(2024, 1, 15, 14, 30, 0);
+        $arabicCarbon = $model->getArabicCarbon('created_at');
+
+        $this->assertStringContainsString('يناير', $arabicCarbon->toArabic());
+    }
+
+    public function test_hijri_conversion_matches_known_reference_dates(): void
+    {
+        $service = app(ArabicDateService::class);
+
+        // Verified against widely reported reference dates.
+        $this->assertEquals(
+            ['year' => 1420, 'month' => 9, 'day' => 24],
+            $service->toHijri(Carbon::create(2000, 1, 1))
+        );
+
+        $this->assertEquals(
+            ['year' => 1441, 'month' => 1, 'day' => 1],
+            $service->toHijri(Carbon::create(2019, 9, 1))
+        );
+    }
+
+    public function test_format_hijri(): void
+    {
+        $service = app(ArabicDateService::class);
+        $date = Carbon::create(2024, 1, 15);
+
+        $formatted = $service->formatHijri($date);
+
+        $this->assertStringContainsString('رجب', $formatted);
+        $this->assertStringContainsString('١٤٤٥', $formatted);
+        $this->assertStringContainsString('هـ', $formatted);
+    }
+
+    public function test_arabic_carbon_to_hijri(): void
+    {
+        $arabicCarbon = \AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon::parse('2024-01-15');
+
+        $this->assertStringContainsString('رجب', $arabicCarbon->toHijri());
+    }
+
+    public function test_arabic_date_and_hijri_date_blade_directives_are_registered(): void
+    {
+        $directives = \Illuminate\Support\Facades\Blade::getCustomDirectives();
+
+        $this->assertArrayHasKey('arabicDate', $directives);
+        $this->assertArrayHasKey('hijriDate', $directives);
+    }
+
+    public function test_custom_arabic_date_cast(): void
+    {
+        app()->setLocale('ar');
+
+        $model = new class extends \Illuminate\Database\Eloquent\Model {
+            protected $table = 'example_models';
+            protected $fillable = ['title', 'published_at'];
+            protected $casts = [
+                'published_at' => \AhmadChebbo\LaravelArabicDate\Casts\ArabicDate::class,
+            ];
+        };
+
+        $model->published_at = Carbon::create(2024, 1, 15, 14, 30, 0);
+
+        $this->assertInstanceOf(\AhmadChebbo\LaravelArabicDate\Objects\ArabicCarbon::class, $model->published_at);
+        $this->assertStringContainsString('يناير', $model->published_at->format('d F Y'));
     }
 }

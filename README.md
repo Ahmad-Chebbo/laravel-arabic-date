@@ -1,13 +1,15 @@
 # Laravel Arabic Date
 
-A Laravel package that automatically converts date fields to Arabic format when the application language is set to Arabic.
+A Laravel package that automatically converts date fields to Arabic format when the application language is set to Arabic, with civil Hijri (Islamic) calendar conversion.
 
 ## Features
 
-- 🗓️ Automatic Arabic date conversion for model attributes
-- 🔢 Arabic numerals support (٠١٢٣٤٥٦٧٨٩)
+- 🗓️ Automatic Arabic date conversion for model attributes (works for any date field, not just `created_at`/`updated_at` — no manual `$casts` needed)
+- 🔢 Arabic numerals support (٠١٢٣٤٥٦٧٨٩), including abbreviated month/day formats (`M`, `D`)
 - 📅 Arabic month and day names
-- 🎯 Easy-to-use trait for models
+- 🌙 Hijri (Islamic) calendar conversion
+- 🎯 Easy-to-use trait for models, or an Eloquent cast if you prefer
+- 🖋️ Blade directives: `@arabicDate($date)` and `@hijriDate($date)`
 - ⚙️ Configurable settings
 - 🎨 Facade for direct usage
 
@@ -58,6 +60,25 @@ class Post extends Model
 
 Now, when your application language is set to Arabic (`app()->setLocale('ar')`), the specified date fields will automatically be displayed in Arabic format.
 
+> Fields listed in `$arabicDate` don't need to be declared in `$casts` — the trait automatically casts them to `datetime` for you (see [`auto_convert_on_retrieval`](#configuration-options)). If you'd rather cast a field explicitly, or prefer not to use the trait at all, see [Alternative: Eloquent Cast](#alternative-eloquent-cast) below.
+
+### Alternative: Eloquent Cast
+
+If you'd rather not add the trait to your model, cast a single field directly instead:
+
+```php
+use AhmadChebbo\LaravelArabicDate\Casts\ArabicDate;
+
+class Post extends Model
+{
+    protected $casts = [
+        'published_at' => ArabicDate::class,
+    ];
+}
+```
+
+This behaves the same way as the trait for that field: it returns an `ArabicCarbon` instance that renders in Arabic when the locale is supported, and falls back to normal Carbon formatting otherwise.
+
 ### Manual Usage with Facade
 
 You can also use the facade directly for manual date conversion:
@@ -78,6 +99,21 @@ $dateWithDay = ArabicDate::formatDateWithDay($date); // الاثنين ١٥ ين
 
 // With time
 $dateTime = ArabicDate::formatDateTime($date); // ١٥ يناير ٢٠٢٤ ١٤:٣٠:٠٠
+
+// Hijri (Islamic calendar) formatting
+$hijriDate = ArabicDate::formatHijri($date); // ٤ رجب ١٤٤٥هـ
+$hijri = ArabicDate::toHijri($date); // ['year' => 1445, 'month' => 7, 'day' => 4]
+```
+
+> Hijri conversion uses the civil (tabular) Islamic calendar — a fixed arithmetic approximation. It may differ by a day from observation-based calendars (e.g. Umm al-Qura) near month boundaries.
+
+### Blade Directives
+
+```blade
+<p>{{-- Uses config('arabic-date.custom_format') --}}</p>
+<p>@arabicDate($post->created_at)</p>
+<p>@arabicDate($post->created_at, 'l, d F Y')</p>
+<p>@hijriDate($post->created_at)</p>
 ```
 
 ### Service Injection
@@ -125,7 +161,7 @@ return [
 - **`enable_arabic_months`**: Enable/disable Arabic month names (default: `true`)
 - **`enable_arabic_days`**: Enable/disable Arabic day names (default: `true`)
 - **`supported_languages`**: Array of language codes that trigger Arabic conversion (default: `['ar']`)
-- **`auto_convert_on_retrieval`**: Enable automatic conversion when models are retrieved (default: `true`)
+- **`auto_convert_on_retrieval`**: Whether `$arabicDate` fields are auto-cast to `datetime` so they don't need `$casts` declared manually (default: `true`)
 
 ### Configuration Examples
 
@@ -141,16 +177,6 @@ return [
 // Use a different default format
 'default_format' => 'd/m/Y H:i',
 ```
-
-### Configuration Options
-
-- `default_format`: The default format for date conversion
-- `custom_format`: Format for custom date formatting
-- `enable_arabic_numerals`: Enable/disable Arabic numerals conversion
-- `enable_arabic_months`: Enable/disable Arabic month names
-- `enable_arabic_days`: Enable/disable Arabic day names
-- `supported_languages`: Array of language codes that trigger Arabic conversion
-- `auto_convert_on_retrieval`: Enable automatic conversion when models are retrieved
 
 ## Model Methods
 
@@ -174,17 +200,38 @@ $post = Post::first();
 $arabicDate = $post->getArabicDate('created_at'); // Returns Arabic formatted string
 ```
 
-### `getArabicCarbon(string $field)`
+### `getArabicCarbon(string $field, ?string $locale = null)`
 
-Get an ArabicCarbon instance for a specific field:
+Get an ArabicCarbon instance for a specific field. Returns `null` only when the field itself has no value — it does **not** return `null` just because the locale isn't Arabic, so it's always safe to chain:
 
 ```php
 $post = Post::first();
-$arabicCarbon = $post->getArabicCarbon('created_at'); // Returns ArabicCarbon instance
-echo $arabicCarbon->toArabicWithDay(); // الاثنين ١٥ يناير ٢٠٢٤
+$arabicCarbon = $post->getArabicCarbon('created_at'); // Returns ArabicCarbon instance (or null if the field is empty)
+echo $arabicCarbon?->toArabicWithDay(); // الاثنين ١٥ يناير ٢٠٢٤ — forces Arabic regardless of locale
+echo $arabicCarbon?->format('Y-m-d'); // Arabic when locale is Arabic, plain Carbon format otherwise
+echo $arabicCarbon?->toHijri(); // ٤ رجب ١٤٤٥هـ
 ```
 
-### `isArabicConversionEnabled()`
+### `getHijriDate(string $field)`
+
+Get the Hijri (Islamic calendar) formatted date for a specific field:
+
+```php
+$post = Post::first();
+$hijriDate = $post->getHijriDate('created_at'); // ٤ رجب ١٤٤٥هـ
+```
+
+### `convertDatesToArabic(?string $locale = null)`
+
+Returns all `$arabicDate` fields as an array of formatted strings, without mutating the model — handy for building an API response:
+
+```php
+$post = Post::first();
+$post->convertDatesToArabic();
+// ['created_at' => '١٥ يناير ٢٠٢٤', 'updated_at' => '١٦ يناير ٢٠٢٤']
+```
+
+### `isArabicConversionEnabled(?string $locale = null)`
 
 Check if Arabic conversion is enabled for the current locale:
 
@@ -311,6 +358,19 @@ Route::get('/posts', function () {
 });
 ```
 
+Or convert every configured field at once with `convertDatesToArabic()`:
+
+```php
+Route::get('/posts', function () {
+    App::setLocale('ar');
+
+    return Post::all()->map(fn ($post) => array_merge(
+        ['id' => $post->id, 'title' => $post->title],
+        $post->convertDatesToArabic()
+    ));
+});
+```
+
 
 ## Roadmap & Planned Features
 
@@ -325,18 +385,19 @@ We are committed to continuously improving **Laravel Arabic Date**. Here’s our
     - [x] Facade and helper methods
     - [x] Full compatibility with Laravel 9–12
 
-- **v1.1+ (Planned)**
+- **v1.1**
     - [x] **AM/PM Conversion:** Convert `AM`/`PM` to Arabic equivalents (`ص` for صباحًا, `م` for مساءً) in formatted dates and times
     - [x] Customizable translation for time periods (AM/PM)
-    - [ ] Improved support for API Resource responses
-    - [ ] Blade directive for Arabic date formatting Eg. `@arabicDate()`
-    - [ ] Support for additional calendar systems (e.g., Hijri)
-    - [ ] Enhanced localization and multi-language support
 
-### Upcoming: Improved API Resource Support
-
-
-When using API resources (such as Laravel's `JsonResource`), you can automatically ensure all date and time fields are formatted in Arabic, including correct AM/PM conversion. This provides seamless API support for Arabic date formatting.
+- **v1.2**
+    - [x] `convertDatesToArabic()` for building API responses without mutating the model
+    - [x] Automatic field conversion for any date field (no `$casts` boilerplate required)
+    - [x] `Casts\ArabicDate` — an Eloquent cast alternative to the trait
+    - [x] Blade directives: `@arabicDate()` and `@hijriDate()`
+    - [x] Hijri (Islamic) calendar conversion — `toHijri()`, `formatHijri()`, `getHijriDate()`
+    - [x] Abbreviated month/day name conversion (`M`, `D` format characters)
+    - [ ] Enhanced localization and multi-language support (e.g. distinct numeral systems per Arabic locale variant)
+    - [ ] `Illuminate\Contracts\Support\Arrayable`/JSON Resource integration that doesn't require calling `convertDatesToArabic()` manually
 
 ## Testing
 
@@ -350,4 +411,4 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information. 
+The MIT License (MIT). Please see [License File](LICENSE) for more information.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AhmadChebbo\LaravelArabicDate;
 
 use AhmadChebbo\LaravelArabicDate\Services\ArabicDateService;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
 class ArabicDateServiceProvider extends ServiceProvider
@@ -39,5 +40,22 @@ class ArabicDateServiceProvider extends ServiceProvider
             __DIR__ . '/../config/arabic-date.php', 'arabic-date'
         );
 
+        $this->registerBladeDirectives();
+    }
+
+    /**
+     * Register Blade directives for Arabic date formatting.
+     */
+    protected function registerBladeDirectives(): void
+    {
+        // @arabicDate($date) or @arabicDate($date, 'd F Y')
+        Blade::directive('arabicDate', function (string $expression) {
+            return "<?php echo app(\AhmadChebbo\LaravelArabicDate\Services\ArabicDateService::class)->formatDateCustom({$expression}); ?>";
+        });
+
+        // @hijriDate($date)
+        Blade::directive('hijriDate', function (string $expression) {
+            return "<?php echo app(\AhmadChebbo\LaravelArabicDate\Services\ArabicDateService::class)->formatHijri({$expression}); ?>";
+        });
     }
 }

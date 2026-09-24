@@ -7,7 +7,7 @@ namespace AhmadChebbo\LaravelArabicDate\Objects;
 use AhmadChebbo\LaravelArabicDate\Services\ArabicDateService;
 use Carbon\Carbon;
 
-class ArabicCarbon
+class ArabicCarbon implements \Stringable
 {
     /**
      * The original Carbon instance.
@@ -26,17 +26,6 @@ class ArabicCarbon
     {
         $this->originalCarbon = $carbon;
         $this->arabicEnabled = $arabicEnabled;
-    }
-
-    /**
-     * Boot the ArabicCarbon class and set up any necessary configurations.
-     */
-    public static function boot(): void
-    {
-        // Initialize any required configurations or dependencies
-        // This method can be called during the application bootstrap process
-        // by default call the format method
-        // $this->format();
     }
 
     /**
@@ -72,7 +61,7 @@ class ArabicCarbon
     public static function yesterday(): self
     {
         $carbon = Carbon::yesterday();
-        return new self($carbon);
+        return new self($carbon, true);
     }
 
     /**
@@ -81,7 +70,7 @@ class ArabicCarbon
     public static function tomorrow(): self
     {
         $carbon = Carbon::tomorrow();
-        return new self($carbon);
+        return new self($carbon, true);
     }
 
     /**
@@ -156,12 +145,21 @@ class ArabicCarbon
     }
 
     /**
-     * Get the Arabic formatted date.
+     * Get the Arabic formatted date (day, month name, year).
      */
     public function toArabic(): string
     {
         $arabicDateService = app(ArabicDateService::class);
-        return $arabicDateService->formatDate($this->originalCarbon);
+        return $arabicDateService->formatDateCustom($this->originalCarbon);
+    }
+
+    /**
+     * Get the Hijri (Islamic calendar) formatted date.
+     */
+    public function toHijri(): string
+    {
+        $arabicDateService = app(ArabicDateService::class);
+        return $arabicDateService->formatHijri($this->originalCarbon);
     }
 
     /**

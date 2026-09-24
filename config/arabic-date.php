@@ -79,8 +79,11 @@ return [
     | Auto-convert on Model Retrieval
     |--------------------------------------------------------------------------
     |
-    | Whether to automatically convert dates when models are retrieved from database.
-    | This is enabled by default when using the HasArabicDates trait.
+    | Whether the HasArabicDates trait should automatically add a `datetime`
+    | cast for every field listed in a model's `$arabicDate` property (unless
+    | it already has a cast). This is what lets the trait convert custom date
+    | fields (e.g. `published_at`) without you having to declare `$casts`
+    | yourself. Disable this if you prefer to manage casts explicitly.
     |
     */
     'auto_convert_on_retrieval' => true,
